@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 )
@@ -140,7 +141,7 @@ Dificulty:
 		fmt.Scanln(&input)
 		dificulty, err := strconv.Atoi(input)
 		if err != nil {
-			fmt.Println("wrong dificulty!")
+			fmt.Println("unknown dificulty!")
 		}
 		switch dificulty {
 		case 1:
@@ -153,7 +154,7 @@ Dificulty:
 			zeros = randomInt(27, 32)
 			break Dificulty
 		default:
-			fmt.Println("wrong dificulty!")
+			fmt.Println("unknown dificulty!")
 		}
 
 	}
@@ -271,15 +272,26 @@ func (s *Sudoku) mixSuqaresVertical(rounds int) {
 }
 
 func (s *Sudoku) addZeros(ammount int) {
+	wg := new(sync.WaitGroup)
+	mu := new(sync.Mutex)
 	for i := 0; i < ammount; i++ {
-		for {
-			idx := randomInt(0, 80)
-			if s.startfield[idx] != 0 {
-				s.startfield[idx] = 0
-				break
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				idx := randomInt(0, 80)
+				mu.Lock()
+				if s.startfield[idx] != 0 {
+					s.startfield[idx] = 0
+					mu.Unlock()
+					break
+				} else {
+					mu.Unlock()
+				}
 			}
-		}
+		}()
 	}
+	wg.Wait()
 }
 
 func printField(field, startfield [81]uint8) {
